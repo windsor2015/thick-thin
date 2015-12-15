@@ -14,7 +14,7 @@ module parameters
     !结构
     integer, parameter :: n_p=0, n_cell_x=12, n_cell_y=12, n_cell_z=40
 
-    integer n_b(3), n_s(2)
+    integer n_b(5), n_s(3)
 
     !n是单体数目，n0是单体、壁、孔数目之和
 
@@ -133,7 +133,7 @@ contains
 
                 ! 和壁保持距离
                 if((sqrt(x_p(1,i)**2+x_p(2,i)**2)>radius(1).and.x_p(3,i)<-5d0).or.(sqrt(x_p(1,i)**2+x_p(2,i)**2)>radius(2).and.x_p(3,i)>-5d0.and.x_p(3,i)<5d0)&
-                                                 .or.(sqrt(x_p(1,i)**2+x_p(2,i)**2)>radius(1).and.x_p(3,i)>5d0)) then
+                        .or.(sqrt(x_p(1,i)**2+x_p(2,i)**2)>radius(1).and.x_p(3,i)>5d0)) then
                     cycle
                 endif
                 ! 和除一级近邻外之前全部要保持一定距离
@@ -168,46 +168,46 @@ contains
         n_s(3)=n_s(1)+n_s(2)
         allocate(x_s(3,n_s(3)),v_s(3,n_s(3)),f_s(3,n_s(3)),x0_s(3,n_s(3)),x_s0(3,n_s(3)))
         i=0
-            do while(.true.)
-                i=i+1
-                if(i>n_s(1))exit
-                theta=pi*2*rand()
-                r=sqrt(rand())*radius(1)
-                x_s(1,i)=r*cos(theta)
-                x_s(2,i)=r*sin(theta)
-                x_s(3,i)=(rand()-1d0)*n_cell_z/2d0
-                if(x_s(3,i)>-5d0)then
-                    i=i-1
-                    cycle
-                end if
-            enddo
-            i=i-1
+        do while(.true.)
+            i=i+1
+            if(i>n_s(1))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*radius(1)
+            x_s(1,i)=r*cos(theta)
+            x_s(2,i)=r*sin(theta)
+            x_s(3,i)=(rand()-1d0)*n_cell_z/2d0
+            if(x_s(3,i)>-5d0)then
+                i=i-1
+                cycle
+            end if
+        enddo
+        i=i-1
 
-            do while(.true.)
-                i=i+1
-                if(i>n_s(2))exit
-                theta=pi*2*rand()
-                r=sqrt(rand())*radius(2)
-                x_s(1,i)=r*cos(theta)
-                x_s(2,i)=r*sin(theta)
-                x_s(3,i)=(rand()-5d-1)*n_cell_z/4d0
-            enddo
-            i=i-1
+        do while(.true.)
+            i=i+1
+            if(i>n_s(2))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*radius(2)
+            x_s(1,i)=r*cos(theta)
+            x_s(2,i)=r*sin(theta)
+            x_s(3,i)=(rand()-5d-1)*n_cell_z/4d0
+        enddo
+        i=i-1
 
-            do while(.true.)
-                i=i+1
-                if(i>n_s(3))exit
-                theta=pi*2*rand()
-                r=sqrt(rand())*radius(1)
-                x_s(1,i)=r*cos(theta)
-                x_s(2,i)=r*sin(theta)
-                x_s(3,i)=rand()*n_cell_z/2d0
-                if(x_s(3,i)<5d0)then
-                    i=i-1
-                    cycle
-                end if
-            enddo
-            i=i-1
+        do while(.true.)
+            i=i+1
+            if(i>n_s(3))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*radius(1)
+            x_s(1,i)=r*cos(theta)
+            x_s(2,i)=r*sin(theta)
+            x_s(3,i)=rand()*n_cell_z/2d0
+            if(x_s(3,i)<5d0)then
+                i=i-1
+                cycle
+            end if
+        enddo
+        i=i-1
         !!!!!!!!!!phantom particles
         n_b(1)=nint(pi*((radius(1)+sqrt(5d-1))**2-radius(1)**2)*n_cell_z/2d0*density_s)
         n_b(2)=n_b(1)+nint(pi*((radius(2)+sqrt(5d-1))**2-radius(2)**2)*n_cell_z/2d0*density_s)
@@ -215,30 +215,30 @@ contains
 
         allocate(x_b(3,n_b(5)),v_b(3,n_b(5)))
         i=0
-            do while(.true.)
-                i=i+1
-                if(i>n_b(1))exit
-                theta=pi*2*rand()
-                r=sqrt(rand())*(radius(1)+sqrt(5d-1))
-                if(r<=radius(1))then
-                    i=i-1
-                else
-                    x_b(1,i)=r*cos(theta)
-                    x_b(2,i)=r*sin(theta)
-                    x_b(3,i)=(rand()-1d0)*n_cell_z/2d0
+        do while(.true.)
+            i=i+1
+            if(i>n_b(1))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*(radius(1)+sqrt(5d-1))
+            if(r<=radius(1))then
+                i=i-1
+            else
+                x_b(1,i)=r*cos(theta)
+                x_b(2,i)=r*sin(theta)
+                x_b(3,i)=(rand()-1d0)*n_cell_z/2d0
                 if(x_b(3,i)>-5d0)then
                     i=i-1
                     cycle
                 end if
-                end if
-            enddo
-            i=i-1
+            end if
+        enddo
+        i=i-1
 
         do while(.true.)
             i=i+1
             if(i>n_b(2))exit
             theta=pi*2*rand()
-            r=sqrt(rand())*radius(1)
+            r=sqrt(rand())*(radius(1)+sqrt(5d-1))
             if(r<=radius(2))then
                 i=i-1
             else
@@ -249,51 +249,64 @@ contains
         enddo
         i=i-1
 
-            do while(.true.)
-                i=i+1
-                if(i>n_b(3))exit
-                theta=pi*2*rand()
-                r=sqrt(rand())*(radius(2)+sqrt(5d-1))
-                if(r<=radius(2))then
-                    i=i-1
-                else
-                    x_b(1,i)=r*cos(theta)
-                    x_b(2,i)=r*sin(theta)
-                    x_b(3,i)=(rand()-5d-1)*n_cell_z/4d0
+        do while(.true.)
+            i=i+1
+            if(i>n_b(3))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*(radius(2)+sqrt(5d-1))
+            if(r<=radius(2))then
+                i=i-1
+            else
+                x_b(1,i)=r*cos(theta)
+                x_b(2,i)=r*sin(theta)
+                x_b(3,i)=(rand()-5d-1)*n_cell_z/4d0
                 if(x_b(3,i)>5d0-sqrt(5d-1).or.x_b(3,i)<-5d0+sqrt(5d-1))then
                     i=i-1
                     cycle
                 end if
+            end if
+        enddo
+        i=i-1
+
+        do while(.true.)
+            i=i+1
+            if(i>n_b(4))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*(radius(1)+sqrt(5d-1))
+            if(r<=radius(2))then
+                i=i-1
+            else
+                x_b(1,i)=r*cos(theta)
+                x_b(2,i)=r*sin(theta)
+                x_b(3,i)=rand()*(5d0-sqrt(5d-1))
+            end if
+        enddo
+        i=i-1
+
+        do while(.true.)
+            i=i+1
+            if(i>n_b(5))exit
+            theta=pi*2*rand()
+            r=sqrt(rand())*(radius(1)+sqrt(5d-1))
+            if(r<=radius(2))then
+                i=i-1
+            else
+                x_b(1,i)=r*cos(theta)
+                x_b(2,i)=r*sin(theta)
+                x_b(3,i)=rand()*n_cell_z/4d0
+                if(x_b(3,i)<5d0)then
+                    i=i-1
+                    cycle
                 end if
-            enddo
-            i=i-1
+            end if
+        enddo
+        i=i-1
         write(*,*)i-1
-        write(*,*)"Solvent particle number: ", n_s(2)
-        write(*,*)"Total particle number: ", n_p+n_s(2)
-        write(*,*)"Phantom particle number: ", n_b(3)
+        write(*,*)"Solvent particle number: ", n_s(3)
+        write(*,*)"Total particle number: ", n_p+n_s(3)
+        write(*,*)"Phantom particle number: ", n_b(5)
 
     endsubroutine
-
-    SUBROUTINE connect_z()
-        INTEGER f,i,j
-        REAL(8) distant_z,distant_max
-        PARAMETER(distant_max=7)
-
-        DO i=2,n_p
-            distant_z=x_p(3,i)-x_p(3,i-1)
-            IF(abs(distant_z)>distant_max)THEN
-                IF(distant_z>0)THEN
-                    f=-1
-                ELSE
-                    f=1
-                ENDIF
-                DO j=i,n_p
-                    x_p(3,j)=x_p(3,j)+n_cell_z*f
-                ENDDO
-            ENDIF
-        ENDDO
-        RETURN
-    END SUBROUTINE
 
     subroutine periodic_p()
         implicit none
@@ -338,7 +351,7 @@ contains
     subroutine BEND(f,U,rx1,rx2)
         implicit none
         real(8) f(3), U, rx1(3), rx2(3), c, r1, r2
-        real(8), parameter :: BEND_b = 10
+        real(8), parameter :: BEND_b = 50
 
         rx1(3)=rx1(3)-n_cell_z*nint(rx1(3)/n_cell_z)
         rx2(3)=rx2(3)-n_cell_z*nint(rx2(3)/n_cell_z)
@@ -348,14 +361,9 @@ contains
         c=dot_product(rx1,rx2)/r1/r2
         f=f-BEND_b*((rx1+rx2)/(r1*r2)-c*rx1/r1/r1-c*rx2/r2/r2)
         U=U+BEND_b*(1+c)
-
-        !c=dot_product(rx1,rx2)
-        !f=f+BEND_b*(rx1-rx2)
-        !U=U-BEND_b*c
     end subroutine
 
     subroutine update_force(mode)
-        !    use parameters, only : x_p, f_p, n_p,f0_p
         implicit none
         integer mode, i, j
         real(8) temp(3)
@@ -365,13 +373,10 @@ contains
         U_BEND=0
         U_FENE=0
         U_LJ=0
-        U_WALL=0
         temp=0
-        !call connect_z()
         ! 链两端
         call FENE(f_p(:,1),U_FENE,x_p(:,1)-x_p(:,2))
         call FENE(f_p(:,n_p),U_FENE,x_p(:,n_p)-x_p(:,n_p-1))
-        !if (u>10000) write(*,*) 'force0',U
 
         !$omp parallel do private(j) reduction(+:U_FENE,U_LJ,U_BEND,f_p)
         do i=1,n_p
@@ -392,25 +397,9 @@ contains
 
         enddo
         !$omp end parallel do
-        !if (u>10000) write(*,*) 'force1',U
-        !call periodic_p()
 
-        !        !$omp parallel do private(j) reduction(+:U_LJ,f_p,U_WALL)
-        !        !ULJ(r) force
-        !        do i=1,n_p
-        !            do j=1,n_p
-        !                if (j/=i) then
-        !                    call LJ(f_p(:,i),U_LJ,x_p(:,i)-x_p(:,j))
-        !                endif
-        !            enddo
-        !
-        !!            do j=1,n_b
-        !!                call LJ(f_p(:,i),U_WALL,x_p(:,i)-x_b(:,j))
-        !!            enddo
-        !        enddo
-        !        !$omp end parallel do
         U=U_FENE+U_BEND+U_LJ+U_WALL
-        !if (u>10000) write(*,*) 'force2',U
+
         if (mode==0) then
             f0_p=f_p
         endif
@@ -441,13 +430,9 @@ contains
         s= x>=0 .and. x<=n_cell_x &
             .and. y>=0 .and. y<=n_cell_y &
             .and. z>=0 .and. z<=n_cell_z
-
-        !if (.not.s) write(*,*) r
-
     end subroutine
 
     subroutine cal_collision_velocity(cur_step)
-        !    use parameters
         implicit none
         integer ix,iy,iz,k,count_p,count_s,count_b,i,pointer_p(n_p),pointer_s(1000),cur_step
         real(8)  matrix(3,3), l(3), fai, theta
@@ -462,22 +447,9 @@ contains
         count_cell_b=0
         momentum_cell=0d0
         scalar=1d0
-        ! calculate velocity of all particles in each cell
-        !randx=(rand()-0.5)*box_size_unit
-        !randy=(rand()-0.5)*box_size_unit
-        !randz=(rand()-0.5)*box_size_unit
 
         call random_number(randr)
         randr=(randr-0.5)*box_size_unit
-
-        !        x0_p(1,:)=x_p(1,:)+randx
-        !        x0_s(1,:)=x_s(1,:)+randx
-        !        x0_p(2,:)=x_p(2,:)+randy
-        !        x0_s(2,:)=x_s(2,:)+randy
-        !        x0_p(3,:)=x_p(3,:)+randz
-        !        x0_s(3,:)=x_s(3,:)+randz
-        !        x0_p(3,:)=x0_p(3,:)-n_cell_z*nint((x0_p(3,:))/n_cell_z)
-        !        x0_s(3,:)=x0_s(3,:)-n_cell_z*nint((x0_s(3,:))/n_cell_z)
 
         !$omp parallel do private(ix,iy,iz,check)
         do i=1,n_p
@@ -499,22 +471,16 @@ contains
             endif
         enddo
         !$omp end parallel do
-        !write(*,*) maxval(count_cell_s)
 
         ! phantom particle, the velocity
         sigma1=sqrt(T_set)
-        i=vdrnggaussian(VSL_RNG_METHOD_GAUSSIAN_BOXMULLER, vsl_stream, n_b*3, v_b,0d0,sigma1)
+        i=vdrnggaussian(VSL_RNG_METHOD_GAUSSIAN_BOXMULLER, vsl_stream, n_b(5)*3, v_b, 0d0, sigma1)
         !$omp parallel do private(ix,iy,iz,check,temp)
-        do i=1,n_b
+        do i=1,n_b(5)
             call get_cell_xyz(x_b(:,i)+randr,ix,iy,iz,check)
             if (check) then
                 count_cell_b(ix,iy,iz)=count_cell_b(ix,iy,iz)+1
                 pointer_cell_b(ix,iy,iz,count_cell_b(ix,iy,iz))=i
-                !temp(1)=rand_gaussian(sigma1)
-                !temp(2)=rand_gaussian(sigma1)
-                !temp(3)=rand_gaussian(sigma1)
-                !v_b(:,i)=temp/mass_s
-                ! gaussian should be used
                 momentum_cell(:,ix,iy,iz)=momentum_cell(:,ix,iy,iz)+mass_s*v_b(:,i)
             endif
         enddo
@@ -555,19 +521,16 @@ contains
                     Ek=0
                     do i=1,count_p
                         k=pointer_cell_p(ix,iy,iz,i)
-                        !pointer_p(i)=pointer_cell_p(ix,iy,iz,i)
                         v_p(:,k)=v_p(:,k)-v_aver
                         Ek=Ek+mass_p*sum(v_p(:,k)**2)
                     enddo
                     do i=1,count_s
                         k=pointer_cell_s(ix,iy,iz,i)
-                        !pointer_s(i)=pointer_cell_s(ix,iy,iz,i)
                         v_s(:,k)=v_s(:,k)-v_aver
                         Ek=Ek+mass_s*sum(v_s(:,k)**2)
                     enddo
                     do i=1,count_b
                         k=pointer_cell_b(ix,iy,iz,i)
-                        !pointer_s(i)=pointer_cell_s(ix,iy,iz,i)
                         v_b(:,k)=v_b(:,k)-v_aver
                         Ek=Ek+mass_s*sum(v_b(:,k)**2)
                     enddo
@@ -577,7 +540,6 @@ contains
                     if (thermostat_method>=10) then
                         scalar=thermostat_cal_scalar(cur_step, count_cell_p(ix,iy,iz)+count_cell_s(ix,iy,iz)+count_cell_b(ix,iy,iz), Ek)
                     end if
-                    !write(*,*)scalar
 
                     do i=1,count_p
                         k=pointer_cell_p(ix,iy,iz,i)
@@ -693,9 +655,7 @@ contains
             if (r2<=1d0 .and. r2/=0d0) exit
         enddo
         r=sigma*y*sqrt(-2d0*log(r2)/r2)
-
     end function
-
 
     subroutine thermostat_A()
         implicit none
@@ -815,20 +775,20 @@ contains
             write(output_file,*)'ITEM:TIMESTEP'
             write(output_file,'(I9)')cur_step
             write(output_file,*)'ITEM:NUMBER OF ATOMS'
-            write(output_file,'(I6)')n_p+n_s
+            write(output_file,'(I6)')n_p+n_s(3)
             write(output_file,*)'ITEM:BOX BOUNDS'
-            write(output_file,'(2F7.1)')-radius,radius
-            write(output_file,'(2F7.1)')-radius,radius
+            write(output_file,'(2F7.1)')-radius(1),radius(1)
+            write(output_file,'(2F7.1)')-radius(1),radius(1)
             write(output_file,'(2F7.1)')-n_cell_z/2.0,n_cell_z/2.0
             write(output_file,*)'ITEM:ATOMS id type x y z'
             !            do k=1,n_b
             !                write(output_file,'(2I6,3F13.4)') k,1,x_b(:,k)
             !            enddo
             do k=1,n_p
-                write(output_file,'(2I6,3F13.4)') n_b+k,1,x_p(:,k)
+                write(output_file,'(2I6,3F13.4)') k,1,x_p(:,k)
             enddo
-            do k=1,n_s
-                write(output_file,'(2I6,3F13.4)') n_b+n_p+k,2,x_s(:,k)
+            do k=1,n_s(3)
+                write(output_file,'(2I6,3F13.4)') n_p+k,2,x_s(:,k)
             enddo
         endif
 
@@ -848,8 +808,8 @@ contains
         real(8) r
         logical cross_cylinder,cross_plane
         r=sqrt(x(1)**2+x(2)**2)
-        cross_cylinder=(x(3)<0.and.r>radius_thick).or.(x(3)>0.and.r>radius_thin)
-        cross_plane=r>radius_thin.and.r<radius_thick.and.x(3)>0
+        cross_cylinder = (x(3)<-5d0.and.r>radius(1)).or.(x(3)>5d0.and.r>radius(1)).or.(x(3)>-5d0.and.x(3)<5d0.and.r>radius(2))
+        cross_plane = (r>radius(2).and.r<radius(2).and.x(3)>-5d0.and.x(3)>-5d0)
     endsubroutine
 
     subroutine cross(x,x_0,xc)
@@ -860,7 +820,6 @@ contains
         real(8) sc, t, t1, a, b, c, d, det
         logical check_cylinder,check_plane
         !!越界与界面的交点
-
         call cross_border(x,check_cylinder,check_plane)
         if(check_cylinder)then
             if(sqrt(x(1)**2+x(2)**2)>radius_thick)then
