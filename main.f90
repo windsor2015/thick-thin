@@ -68,7 +68,7 @@ module parameters
 #ifdef __INTEL_COMPILER
     TYPE (VSL_STREAM_STATE) :: vsl_stream
 #endif
-
+    integer :: debug=0
 contains
 
     function distance(x1,x2)
@@ -223,7 +223,7 @@ contains
     subroutine FENE(f,U,rx)
         implicit none
         real(8) f(3), U, rx(3)
-        real(8), parameter :: FENE_rc=1.5*sigma, FENE_k=20
+        real(8), parameter :: FENE_rc=1.5*sigma, FENE_k=5000
         real(8) temp,r
 
         rx(3)=rx(3)-n_cell_z*nint(rx(3)/n_cell_z)
@@ -253,7 +253,7 @@ contains
     subroutine BEND(f,U,rx1,rx2)
         implicit none
         real(8) f(3), U, rx1(3), rx2(3), c, r1, r2
-        real(8), parameter :: BEND_b = 50
+        real(8), parameter :: BEND_b = 10
 
         rx1(3)=rx1(3)-n_cell_z*nint(rx1(3)/n_cell_z)
         rx2(3)=rx2(3)-n_cell_z*nint(rx2(3)/n_cell_z)
@@ -590,7 +590,7 @@ contains
         !                v_p(2,i)=rand_gaussian(sigma1)/mass_p
         !                v_p(3,i)=rand_gaussian(sigma1)/mass_p
         !            endif
-        !        enddo
+        !        enddo5d0-x_0(3,i)
         !        do i=1,n_s
         !            if (rand()<nu_plus_dt) then
         !                v_s(1,i)=rand_gaussian(sigma1)/mass_s
@@ -677,7 +677,7 @@ contains
             write(output_file,*)'ITEM:TIMESTEP'
             write(output_file,'(I9)')cur_step
             write(output_file,*)'ITEM:NUMBER OF ATOMS'
-            write(output_file,'(I6)')n_p+n_s+n_b
+            write(output_file,'(I6)')n_p+n_s!+n_b
             write(output_file,*)'ITEM:BOX BOUNDS'
             write(output_file,'(2F7.1)')-radius(1)-1,radius(1)+1
             write(output_file,'(2F7.1)')-radius(1)-1,radius(1)+1
@@ -688,11 +688,11 @@ contains
                 write(output_file,'(2I6,3F13.4)') k,1,x_p(:,k)
             enddo
             do k=1,n_s
-                write(output_file,'(2I6,3F13.4)') n_p+k,2,x_s(:,k)
+                write(output_file,'(2I6,3F13.4)') n_p+k,3,x_s(:,k)
             enddo
-            do k=1,n_b
-                write(output_file,'(2I6,3F13.4)') n_p+n_s+k,3,x_b(:,k)
-            enddo
+            !            do k=1,n_b
+            !                write(output_file,'(2I6,3F13.4)') n_p+n_s+k,3,x_b(:,k)
+            !            enddo
         endif
 
     end subroutine
@@ -748,41 +748,36 @@ contains
         real(8) x(3),r,z
         r=sqrt(x(1)**2+x(2)**2)
         z=x(3)
-        if (r>radius(1))then
+        if (r>radius(1).or.(r>radius(2).and.r<radius(1).and.abs(z)<5d0))then
             get_region=0
             return
         endif
-        if (z<-5)then
+        if (z<=-5)then
             get_region=1
             return
         endif
-        if (z>5)then
+        if (z>=5)then
             get_region=3
             return
         endif
         get_region=2
-
     end function
-
 
     subroutine do_ba(x,x0,v)
         implicit none
         real(8), dimension(3)::x,x0,xc,normal,v
         real(8) d,t
-
-
         ! 获取交点和法线
         call cross(x,x0,xc,normal)
 
         d=-dot_product(xc,normal)
-        t=(dot_product(normal,x)+d)/norm2(normal)*2
+        t=(dot_product(normal,x)+d)/norm2(normal)
 
-        x=x-t*normal
-
+        x=x-2*t*normal
+        x0=xc+(x-xc)*1d-8
         v=norm2(v)/norm2(x-xc)*(x-xc)
 
-        return
-
+        !return
         !这里没看太懂
         !        if(xc(3)/=0)then
         !            det=xc(1)**2+xc(2)**2
@@ -800,61 +795,6 @@ contains
 
     end subroutine
 
-
-
-    subroutine cross_border(x,x0,cross_cylinder,cross_plane)
-        implicit none
-        real(8), dimension(3):: x(3), x0(3), xm(3)
-        real(8) r, a, b, c, delat, t(5)
-        logical cross_cylinder,cross_plane
-
-        !        if (get_region(x)/=get_region(x0)) then
-        !            do while(.not. in_pipe(x))
-        !                call do_ba(x,x0)
-        !            enddo
-        !        endif
-        !
-        !        if(.not.in_pipe(x))then
-        !            xm(1)=x(1,i)-x_0(1,i)
-        !            xm(2)=x(2,i)-x_0(2,i)
-        !            xm(3)=x(3,i)-x_0(3,i)
-        !            a=xm(1)**2+xm(2)**2
-        !            b=x_0(1,i)*xm(1)+x_0(2,i)*xm(2)
-        !
-        !            c(1)=x_0(1,i)**2+x_0(2,i)**2-radius(1)**2
-        !            delta=b**2-4*a*c(1)
-        !            t(1)=(-b+sqrt(delta))/(2*a)
-        !            if(t(1)>0.and.t(1)<1)then
-        !                cross_cylinder=.true.
-        !            endif
-        !
-        !            t(2)=(-5d0-x_0(3,i))/xm(3)
-        !            if(t(2)>0.and.t(2)<1)then
-        !                cross_plane=.true.
-        !            endif
-        !
-        !            c(2)=x_0(1,i)**2+x_0(2,i)**2-radius(2)**2
-        !            delta=b**2-4*a*c
-        !            t(3)=(-b+sqrt(delta))/(2*a)
-        !            if(t(3)>0.and.t(3)<1)then
-        !                cross_cylinder=.true.
-        !            endif
-        !
-        !            t(4)=(5d0-x_0(3,i))/xm(3,i)
-        !            if(t(4)>0.and.t(4)<1)then
-        !                cross_plane=.true.
-        !            endif
-        !
-        !            c(3)=x_0(1,i)**2+x_0(2,i)**2-radius(1)**2
-        !            delta=b**2-4*a*c(3)
-        !            t(5)=(-b+sqrt(delta))/(2*a)
-        !            if(t(5)>0.and.t(5)<1)then
-        !                cross_cylinder=.true.
-        !            endif
-        !        endif
-        !    endif
-    endsubroutine
-
     subroutine cross(x,x0,xc,normal)
         implicit none
         real(8),dimension(3):: x, x0, xc, normal, xm
@@ -862,43 +802,42 @@ contains
         logical check(4)
         integer i
         !!越界与界面的交点
-
-
         ! 第1类，大圆交点
 
+        t=-1
         xm=x-x0
         a=xm(1)**2+xm(2)**2
-        b=x0(1)*xm(1)+x0(2)*xm(2)
+        b=2*x0(1)*xm(1)+2*x0(2)*xm(2)
         c=x0(1)**2+x0(2)**2-radius(1)**2
 
         delta=b**2-4*a*c
         t(1)=(-b+sqrt(delta))/(2*a)
 
         ! 第2类，x3=-5
-        t(2)=(-5-x0(3))/(x(3)-x0(3))
+        t(2)=(-5-x0(3))/xm(3)
 
         ! 第3类，x3=5
-        t(3)=(5-x0(3))/(x(3)-x0(3))
+        t(3)=(5-x0(3))/xm(3)
 
         ! 第4类，小圆交点
         c=x0(1)**2+x0(2)**2-radius(2)**2
 
         delta=b**2-4*a*c
-        t(4)=(-b+sqrt(delta))/(2*a)
+        if (delta>=0) t(4)=(-b+sqrt(delta))/(2*a)
 
         do i=1,4
-            xc_list(:,i)=x0+(x-x0)*t(i)
+            xc_list(:,i)=x0+xm*t(i)
         enddo
 
         ! 4种法线
         normal_list=0
         normal_list(1:2,1)=-xc_list(1:2,1)
         normal_list(1:2,4)=-xc_list(1:2,4)
-        normal_list(3,2)=-1
-        normal_list(3,3)=1
+        normal_list(3,2)=1
+        normal_list(3,3)=-1
 
         ! 4类边界的范围
-        check(1)=abs(xc_list(3,1))>5
+        check(1)=abs(xc_list(3,1))>=5
 
         r=sqrt(xc_list(1,2)**2+xc_list(2,2)**2)
         check(2)=r<radius(1) .and. r>radius(2)
@@ -906,25 +845,18 @@ contains
         r=sqrt(xc_list(1,3)**2+xc_list(2,3)**2)
         check(3)=r<radius(1) .and. r>radius(2)
 
-        check(4)=abs(xc_list(3,4))<=5
-
+        check(4)=abs(xc_list(3,4))<5
 
         mint=1
         do i=1,4
-            if (t(i)>0 .and. t(i)<=1 .and. check(i) .and. t(i)<mint) then
+            if (t(i)>=0 .and. t(i)<1 .and. check(i) .and. t(i)<mint) then
                 xc=xc_list(:,i)
                 normal=normal_list(:,i)
                 mint=t(i)
             endif
         enddo
 
-
-
-
-
-
-
-        return
+        !return
         !    call cross_border(x,check_cylinder,check_plane)
         !    if(check_cylinder)then
         !        if(sqrt(x(1)**2+x(2)**2)>radius(1))then
@@ -952,17 +884,25 @@ contains
 
     subroutine bounce_back(x,x0,v,n)
         implicit none
-        integer i,n
+        integer i,n,c
 
         real(8), dimension(3,n):: x, x0, v
 
-
-        !$omp parallel do private(x,v1,v,cc,ss,t,det)
+        !$omp parallel do private(c)
         do i=1,n
             ! 越界则回弹
             if (get_region(x(:,i))/=get_region(x0(:,i))) then
+                c=0
                 do while(.not. in_pipe(x(:,i)))
                     call do_ba(x(:,i),x0(:,i),v(:,i))
+                    c=c+1
+                    !if (c>2) then
+                    !    write(*,*)c,i
+                    !    write(*,*)x0(:,i)
+                    !    write(*,*)x(:,i)
+                    !    write(*,*)norm2(x0(1:2,i)),norm2(x(1:2,i))
+                    !    debug=1
+                    !end if
                 enddo
             endif
         enddo
@@ -973,7 +913,7 @@ contains
         implicit none
 
         integer cur_step, output_file, i
-        real(8) :: EK_scaled,T_scaled
+        real(8) :: EK_scaled,T_scaled,t
         ! solvent
         x0_s=x_s
         x_s = x_s + v_s*time_step_s
@@ -998,23 +938,31 @@ contains
 
         if(mod(cur_step,desk_interval_step)==0)then
             call Ek_T(EK_scaled, T_scaled)
-            write(*,'(I7,5F12.3)') cur_step, U_BEND, U_FENE, U_LJ, U,T_scaled
+            call get_time(t)
+            write(*,'(I7,6F12.3)') cur_step, U_BEND, U_FENE, U_LJ, U,T_scaled,t
         endif
 
         call output(output_file,cur_step,equili_interval_step)
         !call output_U(energy_file,cur_step,equili_interval_step)
     end subroutine
 
+    subroutine get_time(t)
+        implicit none
+        real(8) t
+        integer t1, clock_rate, clock_max
+        call system_clock(t1,clock_rate,clock_max)
+        t=1d0*t1/clock_rate
+    end subroutine
+
 
 end module parameters
-
 
 program Poisellie_field
     use parameters
     implicit none
     integer :: cur_step,output_file,energy_file,production_file,velocity_file
-    integer i,j, h_p,n(0:20)
-    real(8) :: EK_scaled,T_scaled,sum_v(0:20),r
+    integer i,j,k,h_p,n(0:20,40)
+    real(8) :: EK_scaled,T_scaled,sum_v(0:20,40),r
 
     output_file=12
     energy_file=13
@@ -1070,22 +1018,24 @@ program Poisellie_field
         !        call date_and_time(TIME=time0)
         !        write(*,*) time0, f_p(:,20)
         if(mod(cur_step,output_interval_step)==0)then
+           do k=0,39
             do i=1,n_s
-                if(x_s(3,i)<2.0 .and. x_s(3,i)>-2.0)then
+                if(x_s(3,i)<(k-19d0)*1d0 .and. x_s(3,i)>(k-20d0)*1d0)then
                     r=sqrt(x_s(1,i)**2+x_s(2,i)**2)
                     j=floor(r*5)
-                    sum_v(j)=sum_v(j)+v_s(3,i)
-                    n(j)=n(j)+1
+                    sum_v(j,k)=sum_v(j,k)+v_s(3,i)
+                    n(j,k)=n(j,k)+1
                 end if
             enddo
-
+           enddo
         end if
     enddo
+    do k=0,39
     do j=0,20
-        sum_v(j)=sum_v(j)/(total_step/output_interval_step)
-        write(velocity_file,*)j,sum_v(j)/n(j)
+        sum_v(j,k)=sum_v(j,k)/(total_step/output_interval_step)
+        write(velocity_file,'(3I6,F13.4)')1,k,j,sum_v(j,k)/n(j,k)
     enddo
-
+    enddo
 
     write(*,*)
     write(*,*)'Production begin'
@@ -1103,26 +1053,29 @@ program Poisellie_field
         v_s(3,:) = v_s(3,:) + gama !- gama*(x_s(1,:)**2+x_s(2,:)**2)/radius**2
         call one_step(cur_step, production_file)
         if(mod(cur_step,output_interval_step)==0)then
-            do i=1,n_s
-                if(x_s(3,i)<2.0 .and. x_s(3,i)>-2.0)then
-                    r=sqrt(x_s(1,i)**2+x_s(2,i)**2)
-                    j=floor(r*5)
-                    sum_v(j)=sum_v(j)+v_s(3,i)
-                    n(j)=n(j)+1
-                end if
+            do k=0,39
+                do i=1,n_s
+                    if(x_s(3,i)<(k-19d0)*1d0 .and. x_s(3,i)>(k-20d0)*1d0)then
+                        r=sqrt(x_s(1,i)**2+x_s(2,i)**2)
+                        j=floor(r*5)
+                        sum_v(j,k)=sum_v(j,k)+v_s(3,i)
+                        n(j,k)=n(j,k)+1
+                    end if
+                enddo
             enddo
-
         end if
-
     enddo
-    do j=0,20
-        sum_v(j)=sum_v(j)/(total_step/output_interval_step)
-        write(velocity_file,*)j,sum_v(j)/n(j)
+
+    do k=0,39
+        do j=0,20
+            sum_v(j,k)=sum_v(j,k)/(total_step/output_interval_step)
+            write(velocity_file,'(3I6,F13.4)')2,k,j,sum_v(j,k)/n(j,k)
+        enddo
     enddo
     close(output_file)
     close(energy_file)
     close(production_file)
-
+    close(velocity_file)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end program Poisellie_field
