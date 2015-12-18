@@ -71,7 +71,7 @@ module parameters
     integer :: debug=0
     real(8) :: time0=0
 
-    real(8) sum_v(0:100,0:400),sum_grid_v(2,0:100,0:400)
+    real(8) sum_v(2,0:100,0:400),sum_grid_v(2,0:100,0:400)
     integer n(0:100,0:400),n_grid(0:100,0:400)
 
 contains
@@ -965,12 +965,13 @@ contains
         integer cur_step
         integer i,j,k
         real(8) r
-        if(mod(cur_step,100)==0)then
+        if(mod(cur_step,1)==0)then
             do i=1,n_s
                 if(x_s(2,i)>-0.25.and.x_s(2,i)<0.25)then
                     j=floor(x_s(1,i)*2)+8
                     k=floor(x_s(3,i)*2)+40
-                    sum_grid_v(:,j,k)=sum_grid_v(:,j,k)+v_s(:,i)
+                    sum_grid_v(1,j,k)=sum_grid_v(1,j,k)+v_s(1,i)
+                    sum_grid_v(2,j,k)=sum_grid_v(2,j,k)+v_s(3,i)
                     n_grid(j,k)=n_grid(j,k)+1
                     ! write(coord_velo_file,'(I10,2F13.4,2ES18.4)')cur_step,x_s(1,i),x_s(3,i),v_s(1,i),v_s(3,i)
                 end if
@@ -983,7 +984,8 @@ contains
                     if(x_s(3,i)<(k-19d0)*1d0 .and. x_s(3,i)>=(k-20d0)*1d0)then
                         r=sqrt(x_s(1,i)**2+x_s(2,i)**2)
                         j=floor(r*5)
-                        sum_v(j,k)=sum_v(j,k)+v_s(3,i)
+                        sum_v(1,j,k)=sum_v(1,j,k)+(v_s(1,i)*x_s(1,i)+v_s(2,i)*x_s(2,i))/r
+                        sum_v(2,j,k)=sum_v(2,j,k)+v_s(3,i)
                         n(j,k)=n(j,k)+1
                     end if
                 enddo
@@ -997,14 +999,14 @@ contains
         integer k,j
         do k=0,39
             do j=0,19
-                sum_v(j,k)=sum_v(j,k)/(step/output_interval_step)
-                write(velocity_file,'(3I6,ES18.4)')num,k,j,sum_v(j,k)/n(j,k)
+                sum_v(:,j,k)=sum_v(:,j,k)/(step/output_interval_step)
+                write(velocity_file,'(3I6,2ES18.4)')num,k,j,sum_v(:,j,k)/n(j,k)
             enddo
         enddo
 
         do j=0,14
             do k=0,78
-                sum_grid_v(:,j,k)=sum_grid_v(:,j,k)/(step/100)
+                sum_grid_v(:,j,k)=sum_grid_v(:,j,k)/(step/1)
                 write(coord_velo_file,'(3I6,2ES18.4)')num,j,k,sum_grid_v(:,j,k)/n_grid(j,k)
             enddo
         enddo
@@ -1046,6 +1048,7 @@ program Poisellie_field
     open(output_file,file='dump.cylinder.lammpstrj')
     open(energy_file,file='energy.out')
     open(production_file,file='dump.production.lammpstrj')
+    open(velocity_file,file='velocity_radius')
     open(coord_velo_file,file='coordinate_velocity')
     call init()
     call thermostat_init()
@@ -1075,7 +1078,6 @@ program Poisellie_field
     write(*,'(A7,6A12)') 'step', 'BEND','FENE','LJ','total','T_scaled','time'
     write(*,*) '-------------------------------------------------------------------------------'
     write(*,'(I7,5F12.3)') 0, U_BEND, U_FENE, U_LJ, U,T_scaled
-    open(velocity_file,file='velocity_radius')
 
     call clear_stat()
     do cur_step=1,equili_step
